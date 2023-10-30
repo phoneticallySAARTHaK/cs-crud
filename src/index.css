@@ -11,3 +11,15 @@
   flex-direction: column;
   min-height: 100svh;
 }
+
+.loading-blur {
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  position: absolute;
+  pointer-events: none;
+  isolation: isolate;
+  z-index: 9999;
+  backdrop-filter: blur(1px);
+}

@@ -18,6 +18,7 @@ import {
   LoaderFunction,
   NavLink,
   Outlet,
+  redirect,
   useLoaderData,
   useLocation,
   useNavigate,
@@ -27,6 +28,7 @@ import {
 import { api } from "../api";
 import { OrderCard } from "../components/OrderCard/OrderCard";
 import { Pagination } from "../components/Pagination/Pagination";
+import { defaults } from "../serviceWorker/paramDefaults";
 import { autoTemplateCols, debounce } from "../utils";
 
 export const Component = () => {
@@ -163,8 +165,16 @@ export const Component = () => {
   );
 };
 
+const keys: Readonly<(keyof typeof defaults)[]> = ["q", "page", "perPage"];
 export const loader: LoaderFunction = ({ request }) => {
-  const params = new URL(request.url).searchParams;
+  const url = new URL(request.url);
+  const params = url.searchParams;
+
+  if (!keys.every((k) => params.has(k))) {
+    keys.forEach((k) => params.set(k, params.get(k) ?? `${defaults[k]}`));
+    return redirect(url.toString());
+  }
+
   const q = params.get("q") ?? "";
   const page = parseInt(params.get("page") ?? "");
   const parpsedPerPage = parseInt(params.get("perPage") ?? "");

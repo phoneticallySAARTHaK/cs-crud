@@ -12,23 +12,19 @@ export const Component = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const id = "loading_blur";
-    if (navigation.state === "loading") {
-      const blur = document.createElement("div");
-      blur.id = id;
-      blur.style.top = "0";
-      blur.style.right = "0";
-      blur.style.left = "0";
-      blur.style.bottom = "0";
-      blur.style.position = "fixed";
-      blur.style.pointerEvents = "none";
-      blur.style.isolation = "isolate";
-      blur.style.zIndex = "9999";
+    const className = "loading-blur";
+    const loadingId = "loading-div";
+    const main = document.getElementById("root")?.querySelector("main");
+    if (!main) return;
 
-      blur.style.backdropFilter = "blur(1px)";
-      document.body.appendChild(blur);
+    if (navigation.state === "loading") {
+      main.style.position = "relative";
+      const div = document.createElement("div");
+      div.classList.add(className);
+      div.id = loadingId;
+      main.appendChild(div);
     } else {
-      document.getElementById(id)?.remove();
+      document.getElementById(loadingId)?.remove();
     }
   }, [navigation.state]);
 
