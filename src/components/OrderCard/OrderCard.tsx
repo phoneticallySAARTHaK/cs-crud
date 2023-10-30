@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { FC, useEffect, useRef } from "react";
 import { RiDeleteBin6Line, RiEdit2Line } from "react-icons/ri";
-import { useSearchParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { api } from "../../api";
 
 export type OrderCardProps = {
@@ -40,20 +40,20 @@ export const OrderCard: FC<OrderCardProps> = ({
     order_ID: id,
   } as const;
 
-  const [params] = useSearchParams();
-
-  const q = params.get("q");
+  const location = useLocation();
 
   const valRef = useRef<HTMLParagraphElement[]>([]);
 
   useEffect(() => {
     const arr = valRef.current;
+    const searchParams = new URLSearchParams(location.search);
+    const q = searchParams.get("q");
     if (!q) return arr.forEach((el) => (el.innerHTML = el.textContent ?? ""));
     const regex = new RegExp(`(${q})`, "ig");
     arr.forEach((el) => {
       el.innerHTML = (el.textContent ?? "").replace(regex, "<mark>$1</mark>");
     });
-  }, [q]);
+  }, [location]);
 
   return (
     <Card bg="gray.100" boxShadow="lg" data-id={id} maxW="lg" {...props}>
