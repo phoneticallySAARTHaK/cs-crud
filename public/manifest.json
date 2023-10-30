@@ -1,0 +1,7 @@
+{
+  "name": "Orders",
+  "short_name": "Orders",
+  "description": "Orders",
+  "start_url": "/",
+  "display": "standalone"
+}
