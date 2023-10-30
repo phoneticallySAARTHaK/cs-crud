@@ -56,7 +56,14 @@ export const OrderCard: FC<OrderCardProps> = ({
   }, [location]);
 
   return (
-    <Card bg="gray.100" boxShadow="lg" data-id={id} maxW="lg" {...props}>
+    <Card
+      bg="gray.100"
+      boxShadow="lg"
+      data-id={id}
+      maxW="lg"
+      {...props}
+      h="fit-content"
+    >
       <CardBody>
         <Heading size="md">{product}</Heading>
 
