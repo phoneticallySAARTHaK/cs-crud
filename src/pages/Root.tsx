@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import {
+  LoaderFunctionArgs,
   Outlet,
+  redirect,
   useLocation,
   useNavigate,
   useNavigation,
@@ -38,3 +40,14 @@ export const Component = () => {
 
   return <Outlet />;
 };
+
+export async function loader({
+  request,
+}: LoaderFunctionArgs): Promise<null | Response> {
+  const isLoggedIn = true;
+  const url = new URL(request.url);
+
+  if (url.pathname !== "/") return null;
+
+  return redirect(isLoggedIn ? "/home" : "/login");
+}

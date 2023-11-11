@@ -3,14 +3,13 @@ import { api } from "./api";
 import { Component as Action, loader as ActionLoader } from "./pages/Action";
 import { ErrorBoundary } from "./pages/Error";
 import * as Home from "./pages/Home";
-import { Component as Root } from "./pages/Root";
-import { rootLoader } from "./pages/loaders";
+import * as Root from "./pages/Root";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    Component: Root,
-    loader: rootLoader,
+    Component: Root.Component,
+    loader: Root.loader,
     children: [
       {
         ErrorBoundary: ErrorBoundary,
