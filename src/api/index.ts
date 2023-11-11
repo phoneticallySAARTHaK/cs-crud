@@ -1,6 +1,62 @@
+import { FormMethod } from "react-router-dom";
 import { swApi } from "../serviceWorker/swTypes";
 
+type JsonObject = {
+  [Key in string]: JsonValue;
+} & {
+  [Key in string]?: JsonValue | undefined;
+};
+type JsonArray = JsonValue[] | readonly JsonValue[];
+type JsonPrimitive = string | number | boolean | null;
+type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+type fetchArgs = Parameters<typeof fetch>;
+
 export namespace api {
+  export type BaseAPIPath = "/api";
+
+  export const baseAPIPath = "/api" satisfies BaseAPIPath;
+
+  type Init = Omit<Exclude<fetchArgs[1], undefined>, "method" | "body"> &
+    (
+      | {
+          method: Exclude<Uppercase<FormMethod>, "GET">;
+          body: JsonValue;
+        }
+      | {
+          method: Extract<Uppercase<FormMethod>, "GET">;
+          body: undefined;
+        }
+    );
+
+  /**
+   * A fetch wrapper, with added type safety. Adds content-type header by default, and stringifies body.
+   * @param input
+   * @param init
+   * @returns JSON parsed response body
+   */
+  async function fetchWrapper(input: fetchArgs[0], init?: Init) {
+    const method =
+      (input instanceof Request
+        ? (input.method as Init["method"])
+        : undefined) ??
+      init?.method ??
+      "GET";
+
+    const body =
+      (input instanceof Request ? await input.text() : undefined) || init?.body;
+
+    const shouldNotSendBody = method === "GET" || !body;
+
+    return fetch(input, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...Object.fromEntries(new Headers(init?.headers).entries()),
+      },
+      body: shouldNotSendBody ? undefined : JSON.stringify(init?.body),
+    }).then((r) => r.json());
+  }
+
   export type Order = {
     id: string;
     customer_name: string;
@@ -9,8 +65,13 @@ export namespace api {
     quantity: number;
   };
 
+  /**
+   * Helper function to create a valid read api URL
+   * @param params ReadRequest Params object
+   * @returns
+   */
   function makeReadURL(params: swApi.ReadRequest) {
-    const url = new URL(`${window.origin}/api`);
+    const url = new URL(`${window.origin}${baseAPIPath}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, `${v}`));
     return url;
   }
@@ -27,7 +88,7 @@ export namespace api {
       perPage,
       q,
     };
-    return fetch(makeReadURL(params)).then((r) => r.json());
+    return fetchWrapper(makeReadURL(params));
   }
 
   export function fetchOrderByID(id: string): Promise<Order> {
@@ -35,7 +96,7 @@ export namespace api {
       type: "one",
       id,
     };
-    return fetch(makeReadURL(params)).then((r) => r.json());
+    return fetchWrapper(makeReadURL(params));
   }
 
   export type CountRequest = Parameters<typeof fetchPageCount>;
@@ -49,38 +110,32 @@ export namespace api {
       perPage,
       q,
     };
-    return fetch(makeReadURL(params)).then((r) => r.json());
+    return fetchWrapper(makeReadURL(params));
   }
 
   export type DeleteResponse = {};
   export type DeleteRequest = { id: string };
   export function deleteOrderByID(
-    data: DeleteRequest,
+    body: DeleteRequest,
   ): Promise<DeleteResponse> {
-    return fetch("/api", {
-      body: JSON.stringify(data),
-      headers: [["Content-Type", "application/json"]],
-      method: "DELETE",
-    }).then((r) => r.json());
+    return fetchWrapper(baseAPIPath, { body, method: "DELETE" });
   }
 
   export type UpdateResponse = { id: string };
   export type UpdateRequest = Order;
-  export function updateOrder(data: UpdateRequest) {
-    return fetch("/api", {
-      body: JSON.stringify(data),
-      headers: [["Content-Type", "application/json"]],
+  export function updateOrder(body: UpdateRequest) {
+    return fetchWrapper(baseAPIPath, {
+      body,
       method: "PUT",
-    }).then((r) => r.json());
+    });
   }
 
   export type CreateResponse = { id: string };
   export type CreateRequest = Order;
-  export function createOrder(data: CreateRequest) {
-    return fetch("/api", {
-      body: JSON.stringify(data),
-      headers: [["Content-Type", "application/json"]],
+  export function createOrder(body: CreateRequest) {
+    return fetchWrapper(baseAPIPath, {
+      body,
       method: "POST",
-    }).then((r) => r.json());
+    });
   }
 }

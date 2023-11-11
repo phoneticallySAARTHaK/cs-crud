@@ -198,8 +198,10 @@ class Delete extends Strategy {
   }
 }
 
+const baseAPIPath = "/api" satisfies api.BaseAPIPath;
+
 function apiRouteMatcher({ url }: { url: URL }) {
-  return url.pathname.startsWith("/api");
+  return url.pathname.startsWith(baseAPIPath);
 }
 
 registerRoute(apiRouteMatcher, new Create(), "POST");
@@ -336,39 +338,42 @@ async function getQueryCount(q: string, perPage: number) {
     };
   });
 }
-
+/** IndexedDB method names */
 type MutationMethod = keyof Pick<IDBObjectStore, "add" | "delete" | "put">;
-type MutationMap<T extends "req" | "res"> = {
-  [k in MutationMethod]: k extends "add"
-    ? T extends "res"
-      ? api.CreateResponse
-      : api.CreateRequest
+
+/** Helper type to map C.U.D. operations with request/response types and IndexDB operations */
+type MutationMap = {
+  [k in MutationMethod as `${k}-res`]: k extends "add"
+    ? api.CreateResponse
     : k extends "delete"
-    ? T extends "res"
-      ? api.DeleteResponse
-      : api.DeleteRequest["id"]
-    : T extends "res"
-    ? api.UpdateResponse
+    ? api.DeleteResponse
+    : api.UpdateResponse;
+} & {
+  [k in MutationMethod as `${k}-req`]: k extends "add"
+    ? api.CreateRequest
+    : k extends "delete"
+    ? api.DeleteRequest
     : api.UpdateRequest;
 };
 
-async function mutationTransaction<T extends MutationMethod>(
-  method: T,
-  argument: MutationMap<"req">[T],
-): Promise<MutationMap<"res">[T]> {
+type ResMap<T extends MutationMethod> = MutationMap[`${T}-res`];
+type ReqMap<T extends MutationMethod> = MutationMap[`${T}-req`];
+
+/** Wrapper function for all mutations */
+async function mutationTransaction<
+  TMethod extends MutationMethod,
+  TArg extends ReqMap<TMethod> = ReqMap<TMethod>,
+  TRes extends ResMap<TMethod> = ResMap<TMethod>,
+>(method: TMethod, argument: TArg): Promise<TRes> {
   const transaction = await getTransaction("readwrite");
 
-  const data = await new Promise<MutationMap<"res">[T]>((res, rej) => {
+  const data = await new Promise<TRes>((res, rej) => {
     const os = transaction.objectStore(dbMeta.osName);
     const func = os[method].bind(os) as (a: typeof argument) => IDBRequest;
     const request = func(argument);
 
     request.onsuccess = () => {
-      res(
-        (method === "delete"
-          ? {}
-          : { id: request.result }) as MutationMap<"res">[T],
-      );
+      res((method === "delete" ? {} : { id: request.result }) as TRes); // Type cast required due to fualty type deduction
     };
 
     request.onerror = (e) => {
@@ -387,7 +392,7 @@ function parseSearchParams<
     urlObj.searchParams.entries(),
   ) as SearchParamType<T>;
 }
-
+/** Casts Object types to Record<string, string> and makes them optional */
 type SearchParamType<T> = {
   [k in keyof T]?: T[k] extends string | number | boolean ? `${T[k]}` : never;
 };
