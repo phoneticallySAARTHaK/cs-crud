@@ -4,6 +4,7 @@ import {
   ChakraProps,
   Flex,
   Grid,
+  GridItem,
   Icon,
   IconButton,
   Input,
@@ -18,7 +19,6 @@ import {
   LoaderFunction,
   NavLink,
   Outlet,
-  redirect,
   useLoaderData,
   useLocation,
   useNavigate,
@@ -28,11 +28,10 @@ import {
 import { api } from "../api";
 import { OrderCard } from "../components/OrderCard/OrderCard";
 import { Pagination } from "../components/Pagination/Pagination";
-import { defaults } from "../serviceWorker/paramDefaults";
 import { autoTemplateCols, debounce } from "../utils";
 
 export const Component = () => {
-  const [data, { count }] = useLoaderData() as [api.Order[], api.CountResponse];
+  const [data, { count }] = useLoaderData() as HomeLoaderData;
 
   const commonProps: ChakraProps = {
     position: "sticky",
@@ -143,13 +142,22 @@ export const Component = () => {
         as="main"
         flex="1"
       >
-        {data.map((d) => (
-          <OrderCard
-            data={d}
-            onDelete={() => navigate(`/home/delete/${d.id}${search}`)}
-            onEdit={() => navigate(`/home/edit/${d.id}${search}`)}
-          />
-        ))}
+        {data.length ? (
+          data.map((d) => (
+            <OrderCard
+              data={d}
+              onDelete={() => navigate(`/home/delete/${d.id}${search}`)}
+              onEdit={() => navigate(`/home/edit/${d.id}${search}`)}
+            />
+          ))
+        ) : (
+          <GridItem placeSelf="center" textAlign="center">
+            No orders found matching the query. <br /> Go to{" "}
+            <Button variant="link" as={Link} to="/home">
+              Home
+            </Button>
+          </GridItem>
+        )}
       </Grid>
 
       <Box
@@ -158,30 +166,30 @@ export const Component = () => {
         bottom={{ base: "0.75rem", md: "1rem" }}
         {...commonProps}
       >
-        <Pagination page_count={count} />
+        {count !== 0 ? <Pagination page_count={count} /> : null}
       </Box>
       <Outlet />
     </>
   );
 };
 
-const keys: Readonly<(keyof typeof defaults)[]> = ["q", "page", "perPage"];
-export const loader: LoaderFunction = ({ request }) => {
+export type HomeLoaderData = [api.Order[], api.CountResponse];
+
+export const loader: LoaderFunction = async ({
+  request,
+}): Promise<HomeLoaderData | Response> => {
   const url = new URL(request.url);
   const params = url.searchParams;
 
-  if (!keys.every((k) => params.has(k))) {
-    keys.forEach((k) => params.set(k, params.get(k) ?? `${defaults[k]}`));
-    return redirect(url.toString());
-  }
-
   const q = params.get("q") ?? "";
-  const page = parseInt(params.get("page") ?? "");
+  const parsedPage = parseInt(params.get("page") ?? "");
+  const page = isNaN(parsedPage) ? 1 : parsedPage;
   const parpsedPerPage = parseInt(params.get("perPage") ?? "");
-  const perPage = isNaN(parpsedPerPage) ? 10 : parpsedPerPage;
+  const perPage =
+    isNaN(parpsedPerPage) || parpsedPerPage === 0 ? 10 : parpsedPerPage;
 
   return Promise.all([
-    api.fetchOrders(q, isNaN(page) ? 1 : page, perPage),
+    api.fetchOrders(q, page, perPage),
     api.fetchPageCount(q, perPage),
   ]);
 };

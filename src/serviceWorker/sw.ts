@@ -126,7 +126,7 @@ class Create extends Strategy {
 class Read extends Strategy {
   protected async _handle(request: Request): Promise<Response | undefined> {
     try {
-      const params = parseSearchParams<swApi.ReadRequest>(request.url);
+      const params = getSearchParamsAsObject<swApi.ReadRequest>(request.url);
 
       switch (params.type) {
         case "one": {
@@ -150,7 +150,8 @@ class Read extends Strategy {
           const parsedPerPage = parseInt(params.perPage ?? "");
 
           const page = isNaN(parsedPage) ? 0 : parsedPage - 1;
-          const perPage = isNaN(parsedPerPage) ? 10 : parsedPerPage;
+          const perPage =
+            isNaN(parsedPerPage) || parsedPerPage === 0 ? 10 : parsedPerPage;
 
           const data = await queryObjects(q, page, perPage);
 
@@ -384,7 +385,7 @@ async function mutationTransaction<
   return data;
 }
 
-function parseSearchParams<
+function getSearchParamsAsObject<
   T extends Record<string, string | undefined | number | boolean>,
 >(url: string | URL) {
   const urlObj = new URL(url);
