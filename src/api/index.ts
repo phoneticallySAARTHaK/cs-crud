@@ -14,11 +14,6 @@ type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 type fetchArgs = Parameters<typeof fetch>;
 
 export namespace api {
-  let resolver: (d: undefined) => void;
-  window.handleCredentialResponseTrap = new Promise<void>(
-    (r) => void (resolver = r),
-  );
-
   async function _login({
     credential,
   }: Parameters<Window["handleCredentialResponse"]>[0]) {
@@ -37,7 +32,7 @@ export namespace api {
   export const login = new Proxy(_login, {
     apply(target, thisArg, args) {
       target.apply(thisArg, args as Parameters<typeof _login>);
-      resolver(undefined);
+      window.handleCredentialResponseTrapResolver(undefined);
 
       return () => void 0;
     },

@@ -13,6 +13,10 @@ export const Component = () => {
 
     window.googleScriptLoaded.then((val) => {
       if (val) {
+        window.handleCredentialResponseTrap = new Promise<void>(
+          (r) => void (window.handleCredentialResponseTrapResolver = r),
+        );
+
         google.accounts.id.renderButton(parent, {
           type: "standard",
           shape: "rectangular",

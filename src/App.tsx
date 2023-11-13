@@ -19,7 +19,7 @@ const router = createBrowserRouter([
   {
     path: routes.root,
     Component: Root.Component,
-
+    loader: Root.loader,
     children: [
       {
         ErrorBoundary: ErrorBoundary,
