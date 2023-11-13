@@ -33,6 +33,7 @@ export const DetailsModal: FC<DetailsModalProps> = ({
   const { register, handleSubmit } = useForm<api.Order>({
     defaultValues: order,
   });
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />

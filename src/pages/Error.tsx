@@ -1,5 +1,6 @@
 import { Button, Grid, Text } from "@chakra-ui/react";
 import { Link as RLink, useRouteError } from "react-router-dom";
+import { routes } from "./routes";
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
@@ -8,7 +9,7 @@ export const ErrorBoundary = () => {
     typeof error === "string" ? (
       <Text textAlign="center">
         {error} <br /> Go to{" "}
-        <Button as={RLink} to="/" variant="link" colorScheme="blue">
+        <Button as={RLink} to={routes.root} variant="link" colorScheme="blue">
           Home
         </Button>
       </Text>

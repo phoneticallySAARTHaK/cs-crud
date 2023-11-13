@@ -140,7 +140,7 @@ class Read extends Strategy {
           const parsedPerPage = parseInt(params.perPage ?? "");
           const perPage = isNaN(parsedPerPage) ? 10 : parsedPerPage;
           return json<api.CountResponse>({
-            count: await getQueryCount(q, perPage),
+            count: await getPageCount(q, perPage),
           });
         }
 
@@ -269,8 +269,7 @@ async function getOrderFromID(id: string) {
 }
 
 function queryMatcher(q: string) {
-  return ([k, v]: [string, string | number]) =>
-    k !== "id" && `${v}`.toLowerCase().includes(q);
+  return (v: string | number) => `${v}`.toLowerCase().includes(q);
 }
 
 async function queryObjects(q: string, page: number, perPage: number) {
@@ -291,7 +290,7 @@ async function queryObjects(q: string, page: number, perPage: number) {
 
       const value = cursor.value as api.Order;
 
-      let matches = Object.entries(value).find(queryMatcher(q));
+      let matches = Object.values(value).find(queryMatcher(q));
 
       if (!matches) {
         cursor.continue();
@@ -310,7 +309,7 @@ async function queryObjects(q: string, page: number, perPage: number) {
   });
 }
 
-async function getQueryCount(q: string, perPage: number) {
+async function getPageCount(q: string, perPage: number) {
   let count = 0;
   const transaction = await getTransaction("readonly");
   return new Promise<number>((res) => {
@@ -327,7 +326,7 @@ async function getQueryCount(q: string, perPage: number) {
 
       const value = cursor.value as api.Order;
 
-      let matches = Object.entries(value).find(queryMatcher(q));
+      let matches = Object.values(value).find(queryMatcher(q));
 
       if (!matches) {
         cursor.continue();

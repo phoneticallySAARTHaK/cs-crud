@@ -2,18 +2,17 @@ import {
   Box,
   Button,
   ChakraProps,
-  Flex,
   Grid,
   GridItem,
-  Icon,
   IconButton,
+  Image,
   Input,
   Tooltip,
 } from "@chakra-ui/react";
-import { ChangeEvent, useEffect } from "react";
+import { ChangeEvent, useEffect, useRef } from "react";
 import { BiPlusMedical } from "react-icons/bi";
-import { MdOutlineAccountCircle } from "react-icons/md";
 import {
+  ActionFunction,
   Form,
   Link,
   LoaderFunction,
@@ -26,12 +25,16 @@ import {
   useSubmit,
 } from "react-router-dom";
 import { api } from "../api";
+import { Header } from "../components/Header/Header";
 import { OrderCard } from "../components/OrderCard/OrderCard";
 import { Pagination } from "../components/Pagination/Pagination";
+import { UserData } from "../types";
 import { autoTemplateCols, debounce } from "../utils";
+import { loaderMiddleware } from "./loaderMiddleware";
+import { routes } from "./routes";
 
 export const Component = () => {
-  const [data, { count }] = useLoaderData() as HomeLoaderData;
+  const [user, data, { count }] = useLoaderData() as HomeLoaderData;
 
   const commonProps: ChakraProps = {
     position: "sticky",
@@ -44,6 +47,7 @@ export const Component = () => {
   const submit = useSubmit();
   const [searchParams] = useSearchParams();
   const q = searchParams.get("q") ?? "";
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = debounce((e: ChangeEvent<HTMLInputElement>) => {
     const formData = new FormData(e.target.form!);
@@ -58,11 +62,14 @@ export const Component = () => {
   }, 250);
 
   useEffect(() => {
-    const input = document.querySelector(
-      'input[name="q"]',
-    ) as HTMLInputElement | null;
+    const input = searchInputRef.current;
     if (input) input.value = q;
   }, []);
+
+  useEffect(() => {
+    const input = searchInputRef.current;
+    if (input && !q) input.value = "";
+  }, [q]);
 
   const gap = "1.5rem";
   const minW = "350px";
@@ -75,25 +82,19 @@ export const Component = () => {
 
   return (
     <>
-      <Flex
-        as="header"
-        zIndex={1}
-        {...commonProps}
-        top={{ base: "0.75rem", md: "1rem" }}
-        gap={4}
-        flexWrap="wrap"
-        align="center"
-      >
+      <Header>
         <Tooltip label="Account">
           <IconButton
             as={NavLink}
-            to="/account"
+            to={`/${routes.account}`}
             aria-label="Account"
             alignSelf="center"
             colorScheme="blue"
             variant="ghost"
             size="sm"
-            icon={<Icon as={MdOutlineAccountCircle} w="100%" h="100%" />}
+            icon={
+              <Image src={user.picture} w="100%" h="100%" borderRadius="50%" />
+            }
           />
         </Tooltip>
         <Box
@@ -113,6 +114,7 @@ export const Component = () => {
             name="q"
             aria-label="Search Query"
             maxW="calc(20rem + 10vw)"
+            ref={searchInputRef}
           />
           <input type="hidden" name="page" value="1" />
           <input
@@ -126,13 +128,13 @@ export const Component = () => {
           ml="auto"
           leftIcon={<BiPlusMedical />}
           as={Link}
-          to={`/home/add${search}`}
+          to={`/${routes.home}/${routes.add}${search}`}
           size={{ base: "xs", sm: "md" }}
           colorScheme="blue"
         >
           Add new
         </Button>
-      </Flex>
+      </Header>
 
       <Grid
         templateColumns={autoTemplateCols({ gap, maxCols, minW })}
@@ -146,14 +148,18 @@ export const Component = () => {
           data.map((d) => (
             <OrderCard
               data={d}
-              onDelete={() => navigate(`/home/delete/${d.id}${search}`)}
-              onEdit={() => navigate(`/home/edit/${d.id}${search}`)}
+              onDelete={() =>
+                navigate(`/${routes.home}/${routes.delete}/${d.id}${search}`)
+              }
+              onEdit={() =>
+                navigate(`/${routes.home}/${routes.edit}/${d.id}${search}`)
+              }
             />
           ))
         ) : (
-          <GridItem placeSelf="center" textAlign="center">
+          <GridItem placeSelf="center" textAlign="center" gridColumn="1 / -1">
             No orders found matching the query. <br /> Go to{" "}
-            <Button variant="link" as={Link} to="/home">
+            <Button variant="link" as={Link} to={`/${routes.home}`}>
               Home
             </Button>
           </GridItem>
@@ -173,7 +179,7 @@ export const Component = () => {
   );
 };
 
-export type HomeLoaderData = [api.Order[], api.CountResponse];
+export type HomeLoaderData = [UserData, api.Order[], api.CountResponse];
 
 export const loader: LoaderFunction = async ({
   request,
@@ -189,7 +195,27 @@ export const loader: LoaderFunction = async ({
     isNaN(parpsedPerPage) || parpsedPerPage === 0 ? 10 : parpsedPerPage;
 
   return Promise.all([
+    loaderMiddleware(),
     api.fetchOrders(q, page, perPage),
     api.fetchPageCount(q, perPage),
   ]);
+};
+
+export const action: ActionFunction = async ({ request }) => {
+  const body = await request.json();
+
+  switch (request.method) {
+    case "DELETE":
+      await api.deleteOrderByID(body);
+      break;
+
+    case "PUT":
+      await api.updateOrder(body);
+      break;
+
+    case "POST":
+      await api.createOrder(body);
+  }
+
+  return null;
 };

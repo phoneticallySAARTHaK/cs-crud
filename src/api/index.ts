@@ -1,5 +1,7 @@
+import { jwtDecode } from "jwt-decode";
 import { FormMethod } from "react-router-dom";
 import { swApi } from "../serviceWorker/swTypes";
+import { UserData } from "../types";
 
 type JsonObject = {
   [Key in string]: JsonValue;
@@ -12,6 +14,53 @@ type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 type fetchArgs = Parameters<typeof fetch>;
 
 export namespace api {
+  let resolver: (d: undefined) => void;
+  window.handleCredentialResponseTrap = new Promise<void>(
+    (r) => void (resolver = r),
+  );
+
+  async function _login({
+    credential,
+  }: Parameters<Window["handleCredentialResponse"]>[0]) {
+    const { email, name, picture } = jwtDecode(credential) as UserData;
+
+    localStorage.setItem(
+      "userData",
+      JSON.stringify({
+        email,
+        name,
+        picture,
+      }),
+    );
+  }
+
+  export const login = new Proxy(_login, {
+    apply(target, thisArg, args) {
+      target.apply(thisArg, args as Parameters<typeof _login>);
+      resolver(undefined);
+
+      return () => void 0;
+    },
+  });
+
+  export function ensureUser(): UserData | null {
+    const raw = localStorage.getItem("userData");
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  export async function logout(hint: string) {
+    const user = ensureUser();
+    if (!user) return;
+    return new Promise((res, rej) => {
+      google.accounts.id.revoke(hint, ({ successful, error }) => {
+        if (successful) {
+          localStorage.removeItem("userData");
+          res(true);
+        } else rej(error);
+      });
+    });
+  }
+
   export type BaseAPIPath = "/api";
 
   export const baseAPIPath = "/api" satisfies BaseAPIPath;

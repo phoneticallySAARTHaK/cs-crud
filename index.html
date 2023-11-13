@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://accounts.google.com/gsi/client" />
 
     <meta name="color-scheme" content="only light" />
     <meta name="description" content="Orders" />
@@ -15,8 +16,15 @@
           navigator.serviceWorker
             .register("/sw.js", { scope: "/" })
             .then((reg) => {
+              console.log("registered");
+              if (reg.waiting) {
+                console.log("waiting");
+                reg.waiting.postMessage({ type: "SKIP_WAITING" });
+              }
               reg.addEventListener("updatefound", () => {
+                console.log("updatefound");
                 if (reg.installing) {
+                  console.log("installing");
                   reg.installing.addEventListener(
                     "statechange",
                     (e) => void e.target.postMessage({ type: "SKIP_WAITING" }),
@@ -34,6 +42,7 @@
   </head>
   <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

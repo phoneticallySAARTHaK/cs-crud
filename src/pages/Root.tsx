@@ -7,6 +7,8 @@ import {
   useNavigate,
   useNavigation,
 } from "react-router-dom";
+import { loaderMiddleware } from "./loaderMiddleware";
+import { routes } from "./routes";
 
 export const Component = () => {
   const location = useLocation();
@@ -19,7 +21,7 @@ export const Component = () => {
     const main = document.getElementById("root")?.querySelector("main");
     if (!main) return;
 
-    if (navigation.state === "loading") {
+    if (navigation.state !== "idle") {
       main.style.position = "relative";
       const div = document.createElement("div");
       div.classList.add(className);
@@ -31,11 +33,14 @@ export const Component = () => {
   }, [navigation.state]);
 
   useEffect(() => {
-    if (location.pathname !== "/") return;
+    if (location.pathname !== routes.root) return;
 
-    const isLoggedIn = true;
-
-    navigate(isLoggedIn ? "/home" : "/login", { replace: true });
+    try {
+      loaderMiddleware();
+      navigate(`/${routes.home}`, { replace: true });
+    } catch {
+      navigate(`/${routes.login}`, { replace: true });
+    }
   }, [location.pathname]);
 
   return <Outlet />;
@@ -44,10 +49,14 @@ export const Component = () => {
 export async function loader({
   request,
 }: LoaderFunctionArgs): Promise<null | Response> {
-  const isLoggedIn = true;
   const url = new URL(request.url);
 
-  if (url.pathname !== "/") return null;
+  if (url.pathname !== routes.root) return null;
 
-  return redirect(isLoggedIn ? "/home" : "/login");
+  try {
+    loaderMiddleware();
+    return redirect(`/${routes.home}`);
+  } catch {
+    return redirect(`/${routes.login}`);
+  }
 }

@@ -7,6 +7,9 @@ export const theme = extendTheme({
         bg: "gray.200",
         px: "0.5rem !important",
       },
+      main: {
+        mt: 4,
+      },
     }),
   },
 });

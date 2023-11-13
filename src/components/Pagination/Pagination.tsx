@@ -14,7 +14,8 @@ export type PaginationProps = { page_count: number };
 
 export const Pagination: FC<PaginationProps> = ({ page_count }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const displayedPage = parseInt(searchParams.get("page") ?? "");
+  const parsedDisplayedPage = parseInt(searchParams.get("page") ?? "");
+  const displayedPage = isNaN(parsedDisplayedPage) ? 1 : parsedDisplayedPage;
 
   const isInvalidPage =
     isNaN(displayedPage) || displayedPage < 1 || displayedPage > page_count;

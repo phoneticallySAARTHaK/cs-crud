@@ -11,6 +11,7 @@ import {
 import { api } from "../api";
 import { DeleteModal } from "../components/DeleteModal/DeleteModal";
 import { DetailsModal } from "../components/DetailsModal/DetailsModal";
+import { routes } from "./routes";
 
 const httpMethod: Record<ActionType, SubmitOptions["method"]> = {
   add: "POST",
@@ -29,12 +30,12 @@ export const Component = () => {
   const submit = useSubmit();
 
   function onClose() {
-    navigate(`/home${location.search}`, { replace: true });
+    navigate(`/${routes.home}${location.search}`, { replace: true });
   }
 
   const submitOptions: SubmitOptions = {
     encType: "application/json",
-    action: `/home${location.search}`,
+    action: `/${routes.home}${location.search}`,
     method: httpMethod[action],
   };
 
@@ -71,7 +72,7 @@ export const loader = async ({
 
   const url = new URL(request.url);
   const search = url.searchParams.toString();
-  const redirectUrl = `/home${search ? "?" + search : ""}`;
+  const redirectUrl = `/${routes.home}${search ? "?" + search : ""}`;
 
   if (!action || !Actions.has(action)) return redirect(redirectUrl);
 
