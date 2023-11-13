@@ -20,6 +20,6 @@
   position: absolute;
   pointer-events: none;
   isolation: isolate;
-  z-index: 9999;
+  z-index: 0;
   backdrop-filter: blur(1px);
 }

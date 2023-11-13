@@ -43,17 +43,37 @@ export const Pagination: FC<PaginationProps> = ({ page_count }) => {
           isDisabled={displayedPage === 1}
           onClick={() => navigate(displayedPage - 1)}
         />
-        {Array(10)
+        {Array<number>(Math.min(page_count, 5))
           .fill(0)
-          .map((_, i) => (
-            <Button
-              colorScheme={page === i ? "blue" : undefined}
-              key={i}
-              onClick={() => navigate(i + 1)}
-            >
-              {i + 1}
-            </Button>
-          ))}
+          .reduce<number[]>((prev, _curr, currIndex, arr) => {
+            const maxLen = arr.length;
+            if (prev.length === maxLen) return prev;
+
+            const i = currIndex - Math.floor(maxLen / 2);
+            const currPage = page + i;
+
+            if (currPage < 0) return prev;
+
+            if (currPage > page_count - 1)
+              return prev.length > 0
+                ? [prev[0] - 1, ...prev]
+                : [page_count - 1];
+
+            prev.push(page + i);
+
+            return prev;
+          }, [])
+          .map((i) => {
+            return (
+              <Button
+                colorScheme={page === i ? "blue" : undefined}
+                key={i}
+                onClick={() => navigate(i + 1)}
+              >
+                {i + 1}
+              </Button>
+            );
+          })}
         <DirectionButton
           direction="forward"
           onClick={() => navigate(displayedPage + 1)}
